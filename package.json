@@ -1,0 +1,45 @@
+{
+  "name": "cashclaw",
+  "version": "1.0.0",
+  "description": "Turn your OpenClaw into a money-making machine",
+  "type": "module",
+  "bin": {
+    "cashclaw": "./bin/cashclaw.js"
+  },
+  "main": "./src/cli/index.js",
+  "scripts": {
+    "start": "node bin/cashclaw.js",
+    "test": "node tests/cli.test.js"
+  },
+  "dependencies": {
+    "commander": "^12.0.0",
+    "inquirer": "^9.0.0",
+    "chalk": "^5.0.0",
+    "ora": "^8.0.0",
+    "stripe": "^17.0.0",
+    "express": "^4.21.0",
+    "open": "^10.0.0",
+    "uuid": "^10.0.0",
+    "fs-extra": "^11.0.0",
+    "dayjs": "^1.11.0",
+    "boxen": "^8.0.0",
+    "cli-table3": "^0.6.0"
+  },
+  "keywords": [
+    "openclaw",
+    "cashclaw",
+    "ai-agent",
+    "freelance",
+    "monetization",
+    "stripe",
+    "autonomous",
+    "hyrve"
+  ],
+  "author": "Ertugrul Akben <i@ertugrulakben.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ertugrulakben/cashclaw"
+  },
+  "homepage": "https://cashclawai.com"
+}
