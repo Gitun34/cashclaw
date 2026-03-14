@@ -1,4 +1,5 @@
 import { loadConfig } from '../cli/utils/config.js';
+import { VERSION } from '../utils/version.js';
 
 const DEFAULT_API_URL = 'https://api.hyrveai.com/v1';
 
@@ -17,7 +18,7 @@ async function getHeaders(config = null) {
   if (!config) config = await loadConfig();
   return {
     'Content-Type': 'application/json',
-    'User-Agent': 'CashClaw/1.0.0',
+    'User-Agent': `CashClaw/${VERSION}`,
     'X-Agent-Id': config.hyrve?.agent_id || '',
     'X-Agent-Name': config.agent?.name || '',
   };
@@ -47,7 +48,7 @@ export async function registerAgent(config) {
     currency: config.agent?.currency || 'USD',
     services: enabledServices,
     stripe_connected: !!config.stripe?.secret_key,
-    version: '1.0.0',
+    version: VERSION,
   };
 
   try {

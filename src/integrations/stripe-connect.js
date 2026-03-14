@@ -11,7 +11,7 @@ async function getStripe() {
   if (stripeClient) return stripeClient;
 
   const config = await loadConfig();
-  const secretKey = config.stripe?.secret_key;
+  const secretKey = process.env.CASHCLAW_STRIPE_SECRET_KEY || config.stripe?.secret_key;
 
   if (!secretKey) {
     throw new Error(

@@ -1,7 +1,7 @@
 {
   "name": "cashclaw",
-  "version": "1.1.0",
-  "description": "Turn your OpenClaw AI agent into a money-making machine — with mission audit trails",
+  "version": "1.2.0",
+  "description": "Turn your OpenClaw AI agent into a money-making machine — 12 skills, audit trails, security hardened",
   "type": "module",
   "bin": {
     "cashclaw": "./bin/cashclaw.js"
@@ -33,7 +33,14 @@
     "monetization",
     "stripe",
     "autonomous",
-    "hyrve"
+    "hyrve",
+    "email-outreach",
+    "competitor-analysis",
+    "landing-page",
+    "data-scraping",
+    "reputation-management",
+    "cold-email",
+    "web-scraping"
   ],
   "author": "Ertugrul Akben <i@ertugrulakben.com>",
   "license": "MIT",

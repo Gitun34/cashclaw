@@ -53,7 +53,7 @@ That is it. CashClaw will:
 1. Create your `~/.cashclaw/` workspace
 2. Set up the mission pipeline
 3. Connect to Stripe (optional, you can add it later)
-4. Install all 7 skills into your OpenClaw agent
+4. Install all 12 skills into your OpenClaw agent
 5. Print your first dashboard
 
 ```bash
@@ -76,7 +76,7 @@ cashclaw audit --url "https://your-client.com" --tier standard
 +------------------+     +---------------------+     +------------------+
 |                  |     |                     |     |                  |
 |    OpenClaw      |---->|   CashClaw Skills   |---->|  CashClaw Engine |
-|    (Your Agent)  |     |   (7 skill packs)   |     |  (Orchestrator)  |
+|    (Your Agent)  |     |  (12 skill packs)   |     |  (Orchestrator)  |
 |                  |     |                     |     |                  |
 +------------------+     +---------------------+     +--------+---------+
                                                               |
@@ -100,7 +100,7 @@ cashclaw audit --url "https://your-client.com" --tier standard
 | Layer | What It Does |
 |-------|-------------|
 | **OpenClaw** | Your AI agent runtime. Reads SKILL.md files, executes instructions. |
-| **CashClaw Skills** | 7 specialized skill packs (SEO, content, leads, invoicing, etc.). |
+| **CashClaw Skills** | 12 specialized skill packs (SEO, content, leads, email outreach, competitor analysis, landing pages, data scraping, reputation management, invoicing, etc.). |
 | **CashClaw Engine** | The `cashclaw-core` skill that orchestrates the mission lifecycle. |
 | **Stripe** | Payment processing. Invoices, payment links, subscriptions, refunds. |
 | **HYRVEai** | Optional marketplace where clients discover and hire CashClaw agents. |
@@ -155,6 +155,16 @@ Every service has transparent, fixed pricing. No hourly rates. No surprises.
 | Social Media (1 platform) | `cashclaw-social-media` | $9/wk | -- | -- |
 | Social Media (3 platforms) | `cashclaw-social-media` | -- | $19/wk | -- |
 | Social Media (Full) | `cashclaw-social-media` | -- | -- | $49/mo |
+| Email Outreach (3-seq) | `cashclaw-email-outreach` | $9 | -- | -- |
+| Email Outreach (7-seq) | `cashclaw-email-outreach` | -- | $19 | $29 |
+| Competitor Analysis (1) | `cashclaw-competitor-analyzer` | $19 | -- | -- |
+| Competitor Analysis (5) | `cashclaw-competitor-analyzer` | -- | $35 | $49 |
+| Landing Page (Copy) | `cashclaw-landing-page` | $15 | -- | -- |
+| Landing Page (HTML+Copy) | `cashclaw-landing-page` | -- | $29 | $39 |
+| Data Scraping (50 records) | `cashclaw-data-scraper` | $9 | -- | -- |
+| Data Scraping (500 records) | `cashclaw-data-scraper` | -- | $19 | $25 |
+| Reputation Audit | `cashclaw-reputation-manager` | $19 | -- | -- |
+| Reputation Monthly | `cashclaw-reputation-manager` | -- | $35 | $49 |
 
 **Custom packages available.** Combine services or request enterprise pricing.
 
@@ -224,6 +234,26 @@ cashclaw invoice --list --status unpaid
 cashclaw invoice --remind --overdue
 cashclaw invoice --refund --invoice "in_xxxxx"
 
+# Email Outreach
+cashclaw outreach --icp "saas founders" --sequence 3 --tier basic
+cashclaw outreach --icp "ecommerce" --sequence 7 --tier pro
+
+# Competitor Analysis
+cashclaw compete --target "competitor.com" --tier basic
+cashclaw compete --targets "a.com,b.com,c.com" --tier pro --output report.md
+
+# Landing Page
+cashclaw landing --product "AI SaaS" --tier standard
+cashclaw landing --product "Mobile App" --tier pro --ab-test
+
+# Data Scraping
+cashclaw scrape --source "https://example.com/products" --count 50
+cashclaw scrape --sources "url1,url2" --count 500 --enrich --output data.csv
+
+# Reputation Management
+cashclaw reputation --brand "MyBrand" --tier basic
+cashclaw reputation --brand "MyBrand" --tier pro --respond
+
 # Configuration
 cashclaw config                  # Show current config
 cashclaw config --stripe-key     # Set Stripe API key
@@ -272,6 +302,11 @@ cashclaw/
     cashclaw-whatsapp-manager/   # WhatsApp automation skill
     cashclaw-social-media/       # Social media management skill
     cashclaw-invoicer/           # Stripe payment skill + scripts
+    cashclaw-email-outreach/     # Cold email sequence skill
+    cashclaw-competitor-analyzer/ # Competitor analysis skill
+    cashclaw-landing-page/       # Landing page copy + HTML skill
+    cashclaw-data-scraper/       # Web data extraction skill
+    cashclaw-reputation-manager/ # Online reputation skill
   templates/                     # Message and report templates
   missions/                      # Example mission files
   tests/                         # Test suite

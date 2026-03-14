@@ -65,6 +65,11 @@ export async function runStatus() {
     lead_generation: 'Lead Generation',
     whatsapp_management: 'WhatsApp Mgmt',
     social_media: 'Social Media',
+    email_outreach: 'Email Outreach',
+    competitor_analysis: 'Competitor Analysis',
+    landing_page: 'Landing Page',
+    data_scraping: 'Data Scraping',
+    reputation_management: 'Reputation Mgmt',
   };
 
   const currencySymbol = { USD: '$', EUR: '€', GBP: '£', TRY: '₺' }[config.agent.currency] || '$';

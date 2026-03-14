@@ -94,6 +94,11 @@ describe('Config', () => {
       'lead_generation',
       'whatsapp_management',
       'social_media',
+      'email_outreach',
+      'competitor_analysis',
+      'landing_page',
+      'data_scraping',
+      'reputation_management',
     ];
 
     for (const svc of expectedServices) {
@@ -145,7 +150,7 @@ describe('Missions', () => {
     const files = await fs.readdir(missionsDir);
     const jsonFiles = files.filter((f) => f.endsWith('.json'));
 
-    assert.ok(jsonFiles.length >= 7, `Expected at least 7 mission templates, found ${jsonFiles.length}`);
+    assert.ok(jsonFiles.length >= 17, `Expected at least 17 mission templates, found ${jsonFiles.length}`);
 
     for (const file of jsonFiles) {
       const template = await fs.readJson(path.join(missionsDir, file));
@@ -187,6 +192,22 @@ describe('Missions', () => {
 
     const whatsapp = await fs.readJson(path.join(missionsDir, 'whatsapp-setup.json'));
     assert.strictEqual(whatsapp.default_price_usd, 19);
+
+    // New v1.2.0 skills
+    const emailBasic = await fs.readJson(path.join(missionsDir, 'email-outreach-basic.json'));
+    assert.strictEqual(emailBasic.default_price_usd, 9);
+
+    const competitorPro = await fs.readJson(path.join(missionsDir, 'competitor-analysis-pro.json'));
+    assert.strictEqual(competitorPro.default_price_usd, 49);
+
+    const landingBasic = await fs.readJson(path.join(missionsDir, 'landing-page-basic.json'));
+    assert.strictEqual(landingBasic.default_price_usd, 15);
+
+    const dataPro = await fs.readJson(path.join(missionsDir, 'data-scrape-pro.json'));
+    assert.strictEqual(dataPro.default_price_usd, 25);
+
+    const reputationAudit = await fs.readJson(path.join(missionsDir, 'reputation-audit.json'));
+    assert.strictEqual(reputationAudit.default_price_usd, 19);
   });
 
   it('should create a mission from template', async () => {
@@ -398,6 +419,85 @@ describe('Dashboard Server', () => {
 
     assert.ok(app, 'Should return an express app');
     assert.strictEqual(typeof app.listen, 'function', 'App should have listen method');
+  });
+});
+
+// ─── Version Tests ────────────────────────────────────────────────────
+
+describe('Version', () => {
+  it('should export VERSION from utils/version.js', async () => {
+    const { VERSION } = await import('../src/utils/version.js');
+    assert.ok(VERSION, 'VERSION should be defined');
+    assert.ok(/^\d+\.\d+\.\d+/.test(VERSION), `VERSION "${VERSION}" should be semver format`);
+  });
+
+  it('should match package.json version', async () => {
+    const { VERSION } = await import('../src/utils/version.js');
+    const pkg = await fs.readJson(
+      path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1')), '..', 'package.json')
+    );
+    assert.strictEqual(VERSION, pkg.version);
+  });
+});
+
+// ─── Security Tests ──────────────────────────────────────────────────
+
+describe('Security', () => {
+  it('should block prototype pollution keys in config traversal', () => {
+    const DANGEROUS_KEYS = ['__proto__', 'constructor', 'prototype'];
+
+    for (const dangerous of DANGEROUS_KEYS) {
+      const keys = `some.${dangerous}.nested`.split('.');
+      const hasDangerous = keys.some((k) => DANGEROUS_KEYS.includes(k));
+      assert.ok(hasDangerous, `Should detect dangerous key "${dangerous}"`);
+    }
+  });
+
+  it('should block sensitive config keys via API', () => {
+    const BLOCKED_KEYS = ['stripe.secret_key', 'stripe.webhook_secret'];
+
+    assert.ok(BLOCKED_KEYS.includes('stripe.secret_key'));
+    assert.ok(BLOCKED_KEYS.includes('stripe.webhook_secret'));
+    assert.ok(!BLOCKED_KEYS.includes('agent.name'));
+    assert.ok(!BLOCKED_KEYS.includes('services.seo_audit.enabled'));
+  });
+
+  it('should have new pricing for v1.2.0 skills', async () => {
+    const { getDefaultConfig } = await import('../src/cli/utils/config.js');
+    const config = getDefaultConfig();
+
+    assert.strictEqual(config.services.email_outreach.pricing.basic, 9);
+    assert.strictEqual(config.services.email_outreach.pricing.pro, 29);
+    assert.strictEqual(config.services.competitor_analysis.pricing.basic, 19);
+    assert.strictEqual(config.services.competitor_analysis.pricing.pro, 49);
+    assert.strictEqual(config.services.landing_page.pricing.basic, 15);
+    assert.strictEqual(config.services.landing_page.pricing.pro, 39);
+    assert.strictEqual(config.services.data_scraping.pricing.basic, 9);
+    assert.strictEqual(config.services.data_scraping.pricing.pro, 25);
+    assert.strictEqual(config.services.reputation_management.pricing.basic, 19);
+    assert.strictEqual(config.services.reputation_management.pricing.pro, 49);
+  });
+});
+
+// ─── Skills Directory Tests ──────────────────────────────────────────
+
+describe('Skills', () => {
+  it('should have 12 skill directories', async () => {
+    const skillsDir = path.resolve(
+      path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1')),
+      '..',
+      'skills'
+    );
+
+    const dirs = await fs.readdir(skillsDir);
+    const skillDirs = dirs.filter(d => d.startsWith('cashclaw-'));
+    assert.ok(skillDirs.length >= 12, `Expected at least 12 skill dirs, found ${skillDirs.length}`);
+
+    for (const dir of skillDirs) {
+      const skillMd = path.join(skillsDir, dir, 'SKILL.md');
+      const exists = await fs.pathExists(skillMd);
+      assert.ok(exists, `${dir}/SKILL.md should exist`);
+    }
   });
 });
 

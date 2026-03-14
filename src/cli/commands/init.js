@@ -16,6 +16,11 @@ const SERVICE_MAP = {
   lead_generation: { label: 'Lead Generation', skills: ['cashclaw-lead-generator'] },
   whatsapp_management: { label: 'WhatsApp Management', skills: ['cashclaw-whatsapp-manager'] },
   social_media: { label: 'Social Media', skills: ['cashclaw-social-media'] },
+  email_outreach: { label: 'Email Outreach', skills: ['cashclaw-email-outreach'] },
+  competitor_analysis: { label: 'Competitor Analysis', skills: ['cashclaw-competitor-analyzer'] },
+  landing_page: { label: 'Landing Page', skills: ['cashclaw-landing-page'] },
+  data_scraping: { label: 'Data Scraping', skills: ['cashclaw-data-scraper'] },
+  reputation_management: { label: 'Reputation Management', skills: ['cashclaw-reputation-manager'] },
 };
 
 export async function runInit() {
@@ -124,6 +129,11 @@ export async function runInit() {
         { name: 'Lead Generation    - Targeted lead lists ($9-$25)', value: 'lead_generation' },
         { name: 'WhatsApp Mgmt      - Setup & automation ($19-$49)', value: 'whatsapp_management' },
         { name: 'Social Media       - Content & scheduling ($9-$49)', value: 'social_media' },
+        { name: 'Email Outreach     - Cold email sequences ($9-$29)', value: 'email_outreach' },
+        { name: 'Competitor Analysis - Analysis reports ($19-$49)', value: 'competitor_analysis' },
+        { name: 'Landing Page       - Copy & HTML generation ($15-$39)', value: 'landing_page' },
+        { name: 'Data Scraping      - Web data extraction ($9-$25)', value: 'data_scraping' },
+        { name: 'Reputation Mgmt    - Review monitoring ($19-$49)', value: 'reputation_management' },
       ],
       validate: (v) => (v.length > 0 ? true : 'Select at least one service'),
     },

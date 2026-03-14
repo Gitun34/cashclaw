@@ -445,7 +445,12 @@ configCmd
     const config = await loadConfig();
 
     // Parse dot notation: "stripe.secret_key" -> config.stripe.secret_key
+    const DANGEROUS_KEYS = ['__proto__', 'constructor', 'prototype'];
     const keys = key.split('.');
+    if (keys.some((k) => DANGEROUS_KEYS.includes(k))) {
+      console.log(chalk.red('  Error: Invalid key name.\n'));
+      return;
+    }
     let obj = config;
     for (let i = 0; i < keys.length - 1; i++) {
       if (!obj[keys[i]] || typeof obj[keys[i]] !== 'object') {
@@ -559,11 +564,16 @@ async function resolveShortId(shortId) {
   if (shortId.length >= 32) return shortId; // Already full UUID
 
   const missions = await listMissions();
-  const match = missions.find((m) => m.id.startsWith(shortId));
-  if (!match) {
+  const matches = missions.filter((m) => m.id.startsWith(shortId));
+
+  if (matches.length === 0) {
     throw new Error(`No mission found matching "${shortId}"`);
   }
-  return match.id;
+  if (matches.length > 1) {
+    const ids = matches.map((m) => `  ${m.id.slice(0, 8)}  ${m.name}`).join('\n');
+    throw new Error(`Ambiguous ID "${shortId}" matches ${matches.length} missions:\n${ids}\nUse more characters to narrow down.`);
+  }
+  return matches[0].id;
 }
 
 program.parse();

@@ -92,6 +92,51 @@ export function getDefaultConfig() {
         },
         description: 'Social media content creation and scheduling',
       },
+      email_outreach: {
+        enabled: false,
+        pricing: {
+          basic: 9,
+          standard: 19,
+          pro: 29,
+        },
+        description: 'Cold email sequences and outreach campaigns',
+      },
+      competitor_analysis: {
+        enabled: false,
+        pricing: {
+          basic: 19,
+          standard: 35,
+          pro: 49,
+        },
+        description: 'Competitor analysis reports with market insights',
+      },
+      landing_page: {
+        enabled: false,
+        pricing: {
+          basic: 15,
+          standard: 29,
+          pro: 39,
+        },
+        description: 'Landing page copy and HTML generation',
+      },
+      data_scraping: {
+        enabled: false,
+        pricing: {
+          basic: 9,
+          standard: 19,
+          pro: 25,
+        },
+        description: 'Web data extraction and structuring',
+      },
+      reputation_management: {
+        enabled: false,
+        pricing: {
+          basic: 19,
+          standard: 35,
+          pro: 49,
+        },
+        description: 'Online review monitoring and response',
+      },
     },
     hyrve: {
       api_url: 'https://api.hyrveai.com/v1',

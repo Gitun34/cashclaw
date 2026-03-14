@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { loadConfig, saveConfig } from '../cli/utils/config.js';
+import { VERSION } from '../utils/version.js';
 import { listMissions, getMissionStats, getMissionTrail } from '../engine/mission-runner.js';
 import { getTotal, getMonthly, getWeekly, getToday, getHistory, getByService, getDailyTotals } from '../engine/earnings-tracker.js';
 import { listInstalledSkills, listAvailableSkills } from '../integrations/openclaw-bridge.js';
@@ -20,9 +21,12 @@ export function createDashboardServer() {
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
 
-  // CORS for local development
+  // CORS — restrict to localhost; requests with no Origin (curl, agents) pass through
   app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
+    const origin = req.headers.origin;
+    if (!origin || origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')) {
+      res.header('Access-Control-Allow-Origin', origin || '*');
+    }
     res.header('Access-Control-Allow-Headers', 'Content-Type');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     if (req.method === 'OPTIONS') {
@@ -188,8 +192,24 @@ export function createDashboardServer() {
         });
       }
 
-      const config = await loadConfig();
+      // Block sensitive keys from API modification
+      const BLOCKED_KEYS = ['stripe.secret_key', 'stripe.webhook_secret'];
+      if (BLOCKED_KEYS.includes(key)) {
+        return res.status(403).json({
+          error: { code: 'FORBIDDEN', message: `Key "${key}" cannot be modified via API` },
+        });
+      }
+
+      // Prototype pollution guard
+      const DANGEROUS_KEYS = ['__proto__', 'constructor', 'prototype'];
       const keys = key.split('.');
+      if (keys.some((k) => DANGEROUS_KEYS.includes(k))) {
+        return res.status(400).json({
+          error: { code: 'VALIDATION_ERROR', message: 'Invalid key name' },
+        });
+      }
+
+      const config = await loadConfig();
       let obj = config;
       for (let i = 0; i < keys.length - 1; i++) {
         if (!obj[keys[i]] || typeof obj[keys[i]] !== 'object') {
@@ -225,7 +245,7 @@ export function createDashboardServer() {
    * Simple health check endpoint.
    */
   app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', version: '1.1.0', timestamp: new Date().toISOString() });
+    res.json({ status: 'ok', version: VERSION, timestamp: new Date().toISOString() });
   });
 
   // Fallback: serve index.html for SPA routing
