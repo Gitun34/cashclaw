@@ -337,6 +337,7 @@ Thanks to everyone who helps make CashClaw better:
 
 - [Ertugrul Akben](https://github.com/ertugrulakben) — Creator & maintainer
 - [Varad Thokal](https://github.com/varadfromeast) — Port auto-increment fix ([#2](https://github.com/ertugrulakben/cashclaw/pull/2))
+- [jagveersingh23](https://github.com/jagveersingh23) — Reported audit CLI `--url` issue ([#4](https://github.com/ertugrulakben/cashclaw/issues/4))
 
 Want to see your name here? Check [Contributing](#contributing) above.
 

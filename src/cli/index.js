@@ -5,6 +5,7 @@ import { loadConfig, saveConfig } from './utils/config.js';
 import { runInit } from './commands/init.js';
 import { runStatus } from './commands/status.js';
 import { runDashboard } from './commands/dashboard.js';
+import { runAudit } from './commands/audit.js';
 import { listMissions, createMission, startMission, completeMission, cancelMission, getMission, getMissionTrail, exportMissionProof } from '../engine/mission-runner.js';
 import { getTotal, getMonthly, getWeekly, getToday, getHistory, getByService } from '../engine/earnings-tracker.js';
 import { listInstalledSkills, listAvailableSkills, installSkills } from '../integrations/openclaw-bridge.js';
@@ -55,6 +56,18 @@ program
   .option('--no-open', 'Don\'t auto-open browser')
   .action(async (options) => {
     await runDashboard(options);
+  });
+
+// ─── cashclaw audit ─────────────────────────────────────────────────────
+program
+  .command('audit')
+  .description('Run an SEO audit on a website')
+  .requiredOption('-u, --url <url>', 'Website URL to audit')
+  .option('-t, --tier <tier>', 'Audit tier (basic|standard|pro)', 'basic')
+  .option('-o, --output <file>', 'Output file path for the report')
+  .action(async (options) => {
+    showMiniBanner();
+    await runAudit(options);
   });
 
 // ─── cashclaw missions ────────────────────────────────────────────────
