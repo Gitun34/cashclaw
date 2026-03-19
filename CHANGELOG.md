@@ -2,6 +2,23 @@
 
 All notable changes to CashClaw will be documented in this file.
 
+## [1.4.0] - 2026-03-19
+
+### Added
+- Machine Payments Protocol (MPP) bridge (`src/integrations/mpp-bridge.js`)
+  - Stripe + Tempo stablecoin payments (USDC)
+  - 1.5% transaction fees (vs 2.9%+$0.30 for cards)
+  - createChallenge, verifyCredential, getStatus functions
+- `cashclaw hyrve` subcommand suite
+  - `hyrve status` -- connection status + MPP availability
+  - `hyrve jobs` -- list available marketplace jobs
+  - `hyrve wallet` -- wallet balance check
+  - `hyrve dashboard` -- open app.hyrveai.com in browser
+
+### Changed
+- Updated README with MPP section and hyrve commands
+- Stats: 111 stars, 34 forks, 3,000+ registered users
+
 ## [1.3.0] - 2026-03-19
 
 ### Added

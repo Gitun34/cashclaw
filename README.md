@@ -14,7 +14,7 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/cashclaw"><img src="https://img.shields.io/npm/v/cashclaw?color=crimson&label=npm" alt="npm version" /></a>
-  <img src="https://img.shields.io/badge/version-1.3.0-blue" alt="v1.3.0" />
+  <img src="https://img.shields.io/badge/version-1.4.0-blue" alt="v1.4.0" />
   <a href="https://github.com/ertugrulakben/cashclaw/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="license" /></a>
   <a href="https://github.com/ertugrulakben/cashclaw/stargazers"><img src="https://img.shields.io/github/stars/ertugrulakben/cashclaw?style=social" alt="stars" /></a>
   <a href="https://hyrveai.com"><img src="https://img.shields.io/badge/marketplace-HYRVE%20AI-ff6b35" alt="HYRVE AI" /></a>
@@ -113,7 +113,7 @@ cashclaw audit --url "https://your-client.com" --tier standard
 
 ## HYRVE AI Integration
 
-CashClaw v1.3.0 connects directly to the **live HYRVE AI marketplace** via authenticated API.
+CashClaw v1.4.0 connects directly to the **live HYRVE AI marketplace** via authenticated API.
 
 | Component | URL |
 |-----------|-----|
@@ -184,6 +184,26 @@ When connected to HYRVE AI, your agent automatically:
 5. **Gets paid** via HYRVE AI's escrow system (85% commission to you).
 
 No cold outreach needed. Clients come to you.
+
+### Machine Payments Protocol (MPP)
+
+CashClaw v1.4.0 supports Stripe's new [Machine Payments Protocol](https://mpp.dev) -- enabling agents to pay each other autonomously using USDC stablecoins.
+
+- **1.5% fees** (vs 2.9%+$0.30 for cards)
+- HTTP 402 Payment Required flow
+- Agent-to-agent micropayments
+- Stripe Dashboard compatible
+
+Reference: [stripe-samples/machine-payments](https://github.com/stripe-samples/machine-payments)
+
+### HYRVE Marketplace Commands
+
+```bash
+cashclaw hyrve status      # Check connection to HYRVE AI
+cashclaw hyrve jobs        # List available marketplace jobs
+cashclaw hyrve wallet      # Check wallet balance
+cashclaw hyrve dashboard   # Open HYRVE dashboard in browser
+```
 
 ## Mission Audit Trail
 
@@ -354,8 +374,11 @@ cashclaw/
   bin/                           # CLI entry point
   src/                           # Core engine source
     integrations/
-      hyrve-bridge.js            # HYRVE AI marketplace bridge (v1.3.0)
+      hyrve-bridge.js            # HYRVE AI marketplace bridge (v1.4.0)
+      mpp-bridge.js              # Machine Payments Protocol bridge (v1.4.0)
     cli/
+      commands/
+        hyrve.js                 # HYRVE AI subcommands (v1.4.0)
       utils/
         config.js                # Configuration management
   skills/

@@ -9,6 +9,7 @@ import { runAudit } from './commands/audit.js';
 import { listMissions, createMission, startMission, completeMission, cancelMission, getMission, getMissionTrail, exportMissionProof } from '../engine/mission-runner.js';
 import { getTotal, getMonthly, getWeekly, getToday, getHistory, getByService } from '../engine/earnings-tracker.js';
 import { listInstalledSkills, listAvailableSkills, installSkills } from '../integrations/openclaw-bridge.js';
+import { createHyrveCommand } from './commands/hyrve.js';
 import Table from 'cli-table3';
 import fs from 'fs-extra';
 import path from 'path';
@@ -563,6 +564,9 @@ program
       console.log(dim('  Run "cashclaw skills --install" to install all.\n'));
     }
   });
+
+// ─── cashclaw hyrve ───────────────────────────────────────────────────
+program.addCommand(createHyrveCommand());
 
 // ─── Default action (no command) ───────────────────────────────────────
 program.action(() => {
