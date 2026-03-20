@@ -6,7 +6,7 @@ import { VERSION } from '../utils/version.js';
 import { listMissions, getMissionStats, getMissionTrail } from '../engine/mission-runner.js';
 import { getTotal, getMonthly, getWeekly, getToday, getHistory, getByService, getDailyTotals } from '../engine/earnings-tracker.js';
 import { listInstalledSkills, listAvailableSkills } from '../integrations/openclaw-bridge.js';
-import { listAvailableJobs, getAgentProfile, listOrders, registerAgent, syncStatus } from '../integrations/hyrve-bridge.js';
+import { listAvailableJobs, getAgentProfile, listOrders, registerAgent, syncStatus, acceptJob, deliverJob, getWallet } from '../integrations/hyrve-bridge.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -261,21 +261,36 @@ export function createDashboardServer() {
         });
       }
 
-      // Parallel fetch
+      // Parallel fetch - use both bridge functions and direct public API
       const [jobsResult, ordersResult, profileResult] = await Promise.allSettled([
         listAvailableJobs(),
         listOrders({ status: 'all' }),
         getAgentProfile(),
       ]);
 
+      // Extract jobs from bridge result (jobs field) or fallback to empty
+      const jobsData = jobsResult.status === 'fulfilled'
+        ? (jobsResult.value.jobs || jobsResult.value.data || [])
+        : [];
+
+      // Extract orders
+      const ordersData = ordersResult.status === 'fulfilled'
+        ? (ordersResult.value.orders || ordersResult.value.data || [])
+        : [];
+
+      // Extract profile
+      const profileData = profileResult.status === 'fulfilled'
+        ? (profileResult.value.agent || profileResult.value.data || profileResult.value)
+        : null;
+
       res.json({
         registered: true,
         agent_id: config.hyrve.agent_id,
         api_url: config.hyrve.api_url || 'https://api.hyrveai.com/v1',
         dashboard_url: config.hyrve.dashboard_url || 'https://app.hyrveai.com',
-        jobs: jobsResult.status === 'fulfilled' ? (jobsResult.value.data || []) : [],
-        orders: ordersResult.status === 'fulfilled' ? (ordersResult.value.data || []) : [],
-        profile: profileResult.status === 'fulfilled' ? profileResult.value.data : null,
+        jobs: jobsData,
+        orders: ordersData,
+        profile: profileData,
       });
     } catch (err) {
       res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: err.message } });
@@ -313,6 +328,46 @@ export function createDashboardServer() {
   app.post('/api/hyrve/sync', async (req, res) => {
     try {
       const result = await syncStatus();
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: err.message } });
+    }
+  });
+
+  /**
+   * POST /api/hyrve/jobs/:id/accept
+   * Accept a job from the HYRVE marketplace.
+   */
+  app.post('/api/hyrve/jobs/:id/accept', async (req, res) => {
+    try {
+      const result = await acceptJob(req.params.id);
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: err.message } });
+    }
+  });
+
+  /**
+   * POST /api/hyrve/orders/:id/deliver
+   * Deliver work for a HYRVE order.
+   */
+  app.post('/api/hyrve/orders/:id/deliver', async (req, res) => {
+    try {
+      const { deliverables, notes } = req.body;
+      const result = await deliverJob(req.params.id, { deliverables, notes });
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: err.message } });
+    }
+  });
+
+  /**
+   * GET /api/hyrve/wallet
+   * Get wallet balances and recent transactions.
+   */
+  app.get('/api/hyrve/wallet', async (req, res) => {
+    try {
+      const result = await getWallet();
       res.json(result);
     } catch (err) {
       res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: err.message } });

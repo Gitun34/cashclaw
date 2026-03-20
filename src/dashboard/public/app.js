@@ -24,6 +24,7 @@ async function loadAll() {
       loadMissions(),
       loadSkills(),
       loadHyrve(),
+      loadWallet(),
     ]);
     document.getElementById('lastUpdated').textContent =
       'Updated: ' + new Date().toLocaleTimeString();
@@ -133,6 +134,8 @@ async function loadSkills() {
 
 // ─── HYRVE Marketplace ────────────────────────────────────────────────
 
+let _hyrveJobs = [];
+
 async function loadHyrve() {
   const res = await fetch('/api/hyrve');
   const data = await res.json();
@@ -170,19 +173,22 @@ async function loadHyrve() {
 
   // Available Jobs
   const jobs = data.jobs || [];
+  _hyrveJobs = jobs;
   html += '<div class="hyrve-section"><h3>Available Jobs (' + jobs.length + ')</h3>';
   if (jobs.length === 0) {
     html += '<div class="empty-state">No jobs available right now</div>';
   } else {
-    html += jobs.slice(0, 5).map(j =>
-      '<div class="mission-item">' +
+    html += jobs.slice(0, 10).map(j => {
+      const price = parseFloat(j.budget_usd || j.budget || j.price || 0);
+      return '<div class="mission-item">' +
         '<div class="mission-info">' +
-          '<div class="mission-name">' + escapeHtml(j.title || j.description || 'Job') + '</div>' +
-          '<div class="mission-meta">' + escapeHtml(j.category || '') + '</div>' +
+          '<div class="mission-name" style="cursor:pointer" onclick="showJobDetail(\'' + j.id + '\')">' + escapeHtml(j.title || j.description || 'Job') + '</div>' +
+          '<div class="mission-meta">' + escapeHtml(j.category || '') + ' &middot; ' + escapeHtml(j.client_name || '') + '</div>' +
         '</div>' +
-        '<span class="mission-price">$' + (j.budget || j.price || 0) + '</span>' +
-      '</div>'
-    ).join('');
+        '<span class="mission-price">$' + price.toFixed(2) + '</span>' +
+        '<a class="btn btn-sm btn-outline" href="https://app.hyrveai.com/marketplace" target="_blank">View</a>' +
+      '</div>';
+    }).join('');
   }
   html += '</div>';
 
@@ -192,15 +198,20 @@ async function loadHyrve() {
   if (orders.length === 0) {
     html += '<div class="empty-state">No orders yet</div>';
   } else {
-    html += orders.slice(0, 5).map(o =>
-      '<div class="mission-item">' +
+    html += orders.slice(0, 10).map(o => {
+      const amount = parseFloat(o.amount_usd || o.amount || o.price || 0);
+      const statusColors = { escrow: 'badge-warning', delivered: 'badge-info', completed: 'badge-success', disputed: 'badge-danger', in_progress: 'badge-info' };
+      const badgeClass = statusColors[o.status] || '';
+      const canDeliver = ['escrow', 'in_progress'].includes(o.status);
+      return '<div class="mission-item">' +
         '<div class="mission-info">' +
-          '<div class="mission-name">' + escapeHtml(o.title || 'Order #' + (o.id || '').slice(0, 8)) + '</div>' +
-          '<div class="mission-meta">' + escapeHtml(o.status || '') + '</div>' +
+          '<div class="mission-name">' + escapeHtml(o.task_description || 'Order #' + (o.id || '').slice(0,8)) + '</div>' +
+          '<div class="mission-meta"><span class="order-badge ' + badgeClass + '">' + escapeHtml(o.status || '') + '</span></div>' +
         '</div>' +
-        '<span class="mission-price">$' + (o.amount || o.price || 0) + '</span>' +
-      '</div>'
-    ).join('');
+        '<span class="mission-price">$' + amount.toFixed(2) + '</span>' +
+        (canDeliver ? '<button class="btn btn-sm btn-secondary" onclick="openDeliverModal(\'' + o.id + '\')">Deliver</button>' : '') +
+      '</div>';
+    }).join('');
   }
   html += '</div>';
 
@@ -448,3 +459,127 @@ window.addEventListener('resize', () => {
   clearTimeout(resizeTimeout);
   resizeTimeout = setTimeout(loadAll, 250);
 });
+
+// ─── Wallet ─────────────────────────────────────────────────────────
+
+async function loadWallet() {
+  try {
+    const res = await fetch('/api/hyrve/wallet');
+    const data = await res.json();
+    if (!data.success && !data.wallet) {
+      document.getElementById('walletAvailable').textContent = '$0.00';
+      document.getElementById('walletPending').textContent = '$0.00';
+      document.getElementById('walletTotal').textContent = '$0.00';
+      return;
+    }
+    const w = data.wallet || {};
+    document.getElementById('walletAvailable').textContent = '$' + parseFloat(w.available || 0).toFixed(2);
+    document.getElementById('walletPending').textContent = '$' + parseFloat(w.pending || 0).toFixed(2);
+    document.getElementById('walletTotal').textContent = '$' + parseFloat(w.total_earned || 0).toFixed(2);
+
+    const txEl = document.getElementById('walletTransactions');
+    const txs = data.transactions || [];
+    if (txs.length === 0) {
+      txEl.innerHTML = '<div class="empty-state">No transactions yet</div>';
+    } else {
+      txEl.innerHTML = txs.slice(0, 5).map(t => {
+        const isCredit = ['payment', 'earning'].includes(t.type);
+        return '<div class="recent-item">' +
+          '<div class="recent-info">' +
+            '<div class="recent-service">' + escapeHtml(t.description || t.type) + '</div>' +
+            '<div class="recent-date">' + escapeHtml(t.status || '') + ' &middot; ' + new Date(t.created_at).toLocaleDateString() + '</div>' +
+          '</div>' +
+          '<span class="recent-amount" style="color:' + (isCredit ? '#16C784' : '#F5A623') + '">' + (isCredit ? '+' : '-') + '$' + Math.abs(t.amount || 0).toFixed(2) + '</span>' +
+        '</div>';
+      }).join('');
+    }
+  } catch (err) {
+    console.error('Wallet load error:', err);
+  }
+}
+
+// ─── Job Accept ─────────────────────────────────────────────────────
+
+async function acceptJobFromDashboard(jobId) {
+  if (!confirm('Accept this job?')) return;
+  try {
+    const res = await fetch('/api/hyrve/jobs/' + jobId + '/accept', { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      alert('Job accepted! Order created.');
+      await loadHyrve();
+    } else {
+      alert('Failed: ' + (data.message || 'Unknown error'));
+    }
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+}
+
+function showJobDetail(jobId) {
+  const job = _hyrveJobs.find(j => j.id === jobId);
+  if (!job) return;
+  const price = parseFloat(job.budget_usd || job.budget || 0);
+  document.getElementById('jobModalTitle').textContent = job.title || 'Job Details';
+  document.getElementById('jobModalBody').innerHTML =
+    '<div class="info-row"><span class="info-label">Category</span><span class="info-value">' + escapeHtml(job.category || 'N/A') + '</span></div>' +
+    '<div class="info-row"><span class="info-label">Budget</span><span class="info-value">$' + price.toFixed(2) + '</span></div>' +
+    '<div class="info-row"><span class="info-label">Client</span><span class="info-value">' + escapeHtml(job.client_name || 'N/A') + '</span></div>' +
+    '<div class="info-row"><span class="info-label">Status</span><span class="info-value">' + escapeHtml(job.status || 'open') + '</span></div>' +
+    '<div style="margin-top:12px;"><strong>Description:</strong><p style="color:#8B9CC0;margin-top:4px;">' + escapeHtml(job.description || 'No description') + '</p></div>';
+  document.getElementById('jobModalFooter').innerHTML =
+    '<a class="btn btn-primary" href="https://app.hyrveai.com/marketplace" target="_blank">Apply on HYRVE ($' + price.toFixed(2) + ')</a>' +
+    '<button class="btn btn-outline" onclick="closeJobModal()">Close</button>';
+  document.getElementById('jobModal').style.display = 'flex';
+}
+
+function closeJobModal() {
+  document.getElementById('jobModal').style.display = 'none';
+}
+
+// ─── Deliver ────────────────────────────────────────────────────────
+
+let _currentDeliverOrderId = null;
+
+function openDeliverModal(orderId) {
+  _currentDeliverOrderId = orderId;
+  document.getElementById('deliverUrl').value = '';
+  document.getElementById('deliverNotes').value = '';
+  document.getElementById('deliverModal').style.display = 'flex';
+}
+
+function closeDeliverModal() {
+  document.getElementById('deliverModal').style.display = 'none';
+  _currentDeliverOrderId = null;
+}
+
+async function submitDelivery() {
+  const url = document.getElementById('deliverUrl').value.trim();
+  const notes = document.getElementById('deliverNotes').value.trim();
+  if (!url) { alert('Deliverables URL is required'); return; }
+
+  const btn = document.getElementById('deliverSubmitBtn');
+  btn.textContent = 'Submitting...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/hyrve/orders/' + _currentDeliverOrderId + '/deliver', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deliverables: url, notes }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert('Work delivered! Waiting for client approval.');
+      closeDeliverModal();
+      await loadHyrve();
+    } else {
+      alert('Failed: ' + (data.message || 'Unknown error'));
+    }
+  } catch (err) {
+    alert('Error: ' + err.message);
+  } finally {
+    btn.textContent = 'Submit Delivery';
+    btn.disabled = false;
+  }
+}

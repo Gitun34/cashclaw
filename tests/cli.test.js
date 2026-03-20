@@ -322,6 +322,10 @@ describe('Integrations', () => {
     assert.strictEqual(typeof hyrve.syncStatus, 'function');
     assert.strictEqual(typeof hyrve.listAvailableJobs, 'function');
     assert.strictEqual(typeof hyrve.acceptJob, 'function');
+    assert.strictEqual(typeof hyrve.deliverJob, 'function');
+    assert.strictEqual(typeof hyrve.getAgentProfile, 'function');
+    assert.strictEqual(typeof hyrve.listOrders, 'function');
+    assert.strictEqual(typeof hyrve.getWallet, 'function');
   });
 
   it('should export openclaw-bridge functions', async () => {

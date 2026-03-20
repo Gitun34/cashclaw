@@ -477,4 +477,43 @@ body {
     align-items: flex-start;
     gap: 8px;
   }
+
+  .wallet-cards {
+    grid-template-columns: 1fr !important;
+  }
 }
+
+/* ─── Wallet ─────────────────────────────────────────────────────── */
+
+.wallet-panel { grid-column: 1 / -1; }
+.wallet-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+.wallet-card { background: #1A2744; border-radius: 8px; padding: 16px; text-align: center; }
+.wallet-card .card-label { font-size: 11px; color: #5A6678; text-transform: uppercase; letter-spacing: 0.5px; }
+.wallet-card .card-value { font-size: 24px; font-weight: 700; margin-top: 4px; }
+.wallet-available .card-value { color: #16C784; }
+.wallet-pending .card-value { color: #F5A623; }
+.wallet-total .card-value { color: #C5D0E6; }
+
+/* ─── Modal ──────────────────────────────────────────────────────── */
+
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
+.modal { background: #1A2744; border-radius: 12px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #2A3A5C; }
+.modal-header h3 { margin: 0; color: #C5D0E6; font-size: 16px; }
+.modal-close { background: none; border: none; color: #5A6678; font-size: 24px; cursor: pointer; }
+.modal-close:hover { color: #C5D0E6; }
+.modal-body { padding: 20px; }
+.modal-body label { display: block; font-size: 12px; color: #5A6678; margin-bottom: 4px; margin-top: 12px; text-transform: uppercase; }
+.modal-input { width: 100%; padding: 10px 12px; background: #0F1A2E; border: 1px solid #2A3A5C; border-radius: 6px; color: #C5D0E6; font-size: 14px; box-sizing: border-box; }
+.modal-input:focus { outline: none; border-color: #16C784; }
+.modal-footer { display: flex; gap: 8px; padding: 16px 20px; border-top: 1px solid #2A3A5C; }
+
+/* ─── Order Status Badges ────────────────────────────────────────── */
+
+.order-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+.badge-info { background: rgba(52,152,219,0.2); color: #3498DB; }
+.badge-danger { background: rgba(231,76,60,0.2); color: #E74C3C; }
+
+/* ─── Small Buttons ──────────────────────────────────────────────── */
+
+.btn-sm { padding: 4px 10px; font-size: 11px; margin-left: 8px; }

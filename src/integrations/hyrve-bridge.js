@@ -101,10 +101,24 @@ export async function registerAgent(config) {
   };
 
   try {
-    const response = await fetch(`${apiUrl}/agents/register`, {
+    // Use self-register endpoint (no auth required for initial registration)
+    const selfRegPayload = {
+      agent_name: payload.agent_name,
+      description: `CashClaw agent: ${enabledServices.map(s => s.type).join(', ')}`,
+      capabilities: enabledServices.map(s => s.type),
+      pricing_model: 'per_task',
+      base_price_usd: enabledServices[0]?.pricing?.basic || 5,
+      owner_email: payload.email,
+      owner_name: payload.owner_name,
+    };
+
+    const response = await fetch(`${apiUrl}/agents/self-register`, {
       method: 'POST',
-      headers: await getHeaders(config),
-      body: JSON.stringify(payload),
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': `CashClaw/${VERSION}`,
+      },
+      body: JSON.stringify(selfRegPayload),
     });
 
     if (!response.ok) {
@@ -115,7 +129,12 @@ export async function registerAgent(config) {
     const data = await response.json();
     return {
       success: true,
-      agent_id: data.agent_id || data.id,
+      data: {
+        agent_id: data.agent_id || data.id,
+        api_key: data.api_key || null,
+        agent_slug: data.agent_slug || null,
+        dashboard_url: data.dashboard_url || null,
+      },
       message: data.message || 'Agent registered successfully',
     };
   } catch (err) {
@@ -186,11 +205,10 @@ export async function listAvailableJobs() {
     .map(([key]) => key);
 
   try {
-    const params = new URLSearchParams({
-      service_types: enabledTypes.join(','),
-      currency: config.agent?.currency || 'USD',
-      limit: '20',
-    });
+    const params = new URLSearchParams({ limit: '20' });
+    if (enabledTypes.length > 0) {
+      params.set('service_types', enabledTypes.join(','));
+    }
 
     const response = await fetch(`${apiUrl}/jobs?${params}`, {
       headers: await getHeaders(config),
@@ -409,5 +427,36 @@ export async function listOrders(options = {}) {
       total: 0,
       message: `Could not fetch orders: ${err.message}`,
     };
+  }
+}
+
+/**
+ * Get the agent's wallet data from the HYRVE marketplace.
+ * Returns available balance, pending balance, total earned, and recent transactions.
+ * @returns {object} Wallet data with balances and transactions
+ */
+export async function getWallet() {
+  const config = await loadConfig();
+  const apiUrl = await getApiUrl();
+  const check = checkBridgeConfig(config);
+  if (!check.configured) {
+    return { success: false, wallet: null, transactions: [], message: check.message };
+  }
+  try {
+    const response = await fetch(`${apiUrl}/wallet`, {
+      headers: await getHeaders(config),
+    });
+    if (!response.ok) {
+      const errMsg = await parseErrorResponse(response);
+      throw new Error(`Wallet fetch failed (${response.status}): ${errMsg}`);
+    }
+    const data = await response.json();
+    return {
+      success: true,
+      wallet: data.wallet || { available: 0, pending: 0, total_earned: 0 },
+      transactions: data.transactions || [],
+    };
+  } catch (err) {
+    return { success: false, wallet: null, transactions: [], message: `Wallet unavailable: ${err.message}` };
   }
 }

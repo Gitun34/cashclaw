@@ -2,6 +2,25 @@
 
 All notable changes to CashClaw will be documented in this file.
 
+## [1.4.5] - 2026-03-20
+
+### Added
+- HYRVE Marketplace panel in CashClaw dashboard (jobs, orders, wallet, profile)
+- Job acceptance from dashboard UI (Accept button)
+- Work delivery from dashboard UI (Deliver button with URL + notes)
+- Wallet panel with available/pending/total earned balances
+- CLI: `cashclaw hyrve accept <job-id>` command
+- CLI: `cashclaw hyrve deliver <order-id> --url <url>` command
+- CLI: `cashclaw hyrve profile` command
+- CLI: `cashclaw hyrve orders` command
+- `getWallet()` bridge function for wallet data
+- Status badges for orders (escrow, delivered, completed, disputed)
+
+### Fixed
+- Job prices showing $0 (was reading wrong field, now uses `budget_usd`)
+- Agent registration using self-register endpoint (no auth required)
+- Order amounts parsing (string to float conversion)
+
 ## [1.4.0] - 2026-03-19
 
 ### Added

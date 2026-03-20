@@ -13,7 +13,7 @@
     <header class="header">
       <div class="header-left">
         <span class="logo">CashClaw</span>
-        <span class="version" id="appVersion">v1.4.0</span>
+        <span class="version" id="appVersion">v1.4.5</span>
       </div>
       <div class="header-right">
         <span class="agent-name" id="agentName">Loading...</span>
@@ -100,6 +100,28 @@
         </div>
       </section>
 
+      <!-- HYRVE Wallet -->
+      <section class="panel wallet-panel">
+        <h2 class="panel-title">HYRVE Wallet</h2>
+        <div class="wallet-cards" id="walletCards">
+          <div class="wallet-card wallet-available">
+            <div class="card-label">Available</div>
+            <div class="card-value" id="walletAvailable">$0.00</div>
+          </div>
+          <div class="wallet-card wallet-pending">
+            <div class="card-label">Pending (Escrow)</div>
+            <div class="card-value" id="walletPending">$0.00</div>
+          </div>
+          <div class="wallet-card wallet-total">
+            <div class="card-label">Total Earned</div>
+            <div class="card-value" id="walletTotal">$0.00</div>
+          </div>
+        </div>
+        <div class="wallet-transactions" id="walletTransactions">
+          <div class="empty-state">No transactions yet</div>
+        </div>
+      </section>
+
       <!-- Recent Earnings -->
       <section class="panel recent-panel">
         <h2 class="panel-title">Recent Earnings</h2>
@@ -142,12 +164,43 @@
 
     <!-- Footer -->
     <footer class="footer">
-      <span id="footerVersion">CashClaw v1.4.0</span>
+      <span id="footerVersion">CashClaw v1.4.5</span>
       <span class="footer-sep">|</span>
       <a href="https://cashclawai.com" target="_blank">cashclawai.com</a>
       <span class="footer-sep">|</span>
       <span id="lastUpdated">-</span>
     </footer>
+  </div>
+
+  <!-- Job Detail Modal -->
+  <div class="modal-overlay" id="jobModal" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="jobModalTitle">Job Details</h3>
+        <button class="modal-close" onclick="closeJobModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="jobModalBody"></div>
+      <div class="modal-footer" id="jobModalFooter"></div>
+    </div>
+  </div>
+
+  <!-- Deliver Modal -->
+  <div class="modal-overlay" id="deliverModal" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Deliver Work</h3>
+        <button class="modal-close" onclick="closeDeliverModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label>Deliverables URL *</label>
+        <input type="url" id="deliverUrl" placeholder="https://..." class="modal-input">
+        <label>Notes (optional)</label>
+        <textarea id="deliverNotes" placeholder="Summary of work delivered..." class="modal-input" rows="3"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="deliverSubmitBtn" onclick="submitDelivery()">Submit Delivery</button>
+      </div>
+    </div>
   </div>
 
   <script src="/app.js"></script>

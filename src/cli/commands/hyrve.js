@@ -4,7 +4,8 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
 import { loadConfig } from '../utils/config.js';
-import { listAvailableJobs, listOrders } from '../../integrations/hyrve-bridge.js';
+import { showMiniBanner } from '../utils/banner.js';
+import { listAvailableJobs, listOrders, acceptJob, deliverJob, getAgentProfile, getWallet } from '../../integrations/hyrve-bridge.js';
 import MppBridge from '../../integrations/mpp-bridge.js';
 
 export function createHyrveCommand() {
@@ -82,6 +83,83 @@ export function createHyrveCommand() {
         console.log('');
       } catch (err) {
         spinner.fail('Failed: ' + err.message);
+      }
+    });
+
+  hyrve
+    .command('accept <jobId>')
+    .description('Accept a job from the HYRVE marketplace')
+    .action(async (jobId) => {
+      showMiniBanner();
+      console.log(chalk.cyan('  Accepting job...'));
+      const result = await acceptJob(jobId);
+      if (result.success) {
+        console.log(chalk.green(`  ✔ Job accepted! Order created.`));
+        if (result.order_id) console.log(chalk.gray(`    Order ID: ${result.order_id}`));
+      } else {
+        console.log(chalk.red(`  ✖ ${result.message}`));
+      }
+    });
+
+  hyrve
+    .command('deliver <orderId>')
+    .description('Deliver work for a HYRVE order')
+    .option('--url <url>', 'Deliverables URL')
+    .option('--summary <text>', 'Delivery summary/notes')
+    .action(async (orderId, opts) => {
+      showMiniBanner();
+      if (!opts.url) {
+        console.log(chalk.red('  ✖ --url is required (deliverables link)'));
+        return;
+      }
+      console.log(chalk.cyan('  Delivering work...'));
+      const result = await deliverJob(orderId, { deliverables: opts.url, notes: opts.summary || '' });
+      if (result.success) {
+        console.log(chalk.green(`  ✔ Work delivered! Waiting for client approval.`));
+      } else {
+        console.log(chalk.red(`  ✖ ${result.message}`));
+      }
+    });
+
+  hyrve
+    .command('profile')
+    .description('View your HYRVE marketplace profile')
+    .action(async () => {
+      showMiniBanner();
+      console.log(chalk.cyan('  Fetching profile...'));
+      const result = await getAgentProfile();
+      if (result.success || result.agent) {
+        const a = result.agent || result;
+        console.log(`\n  ${chalk.bold(a.name || 'Unknown')}`);
+        console.log(`  ${chalk.gray('ID:')} ${a.id || 'N/A'}`);
+        console.log(`  ${chalk.gray('Slug:')} ${a.slug || 'N/A'}`);
+        console.log(`  ${chalk.gray('Rating:')} ${a.avg_rating || '0'}/5`);
+        console.log(`  ${chalk.gray('Jobs:')} ${a.total_jobs || 0} total, ${a.completed_jobs || 0} completed`);
+        console.log(`  ${chalk.gray('Earned:')} $${parseFloat(a.total_earned || 0).toFixed(2)}`);
+        console.log(`  ${chalk.gray('Online:')} ${a.is_online ? chalk.green('Yes') : chalk.red('No')}`);
+        console.log(`  ${chalk.gray('URL:')} https://app.hyrveai.com/agents/${a.slug}`);
+      } else {
+        console.log(chalk.red(`  ✖ ${result.message || 'Profile not available'}`));
+      }
+    });
+
+  hyrve
+    .command('orders')
+    .description('List your HYRVE marketplace orders')
+    .option('--status <status>', 'Filter by status (all/active/completed)', 'all')
+    .action(async (opts) => {
+      showMiniBanner();
+      console.log(chalk.cyan('  Fetching orders...'));
+      const result = await listOrders({ status: opts.status });
+      const orders = result.orders || result.data || [];
+      if (orders.length === 0) {
+        console.log(chalk.gray('  No orders found.'));
+        return;
+      }
+      console.log(`\n  ${chalk.bold('HYRVE Orders')} (${orders.length})\n`);
+      for (const o of orders) {
+        const statusColor = { completed: 'green', escrow: 'yellow', delivered: 'cyan', disputed: 'red' }[o.status] || 'gray';
+        console.log(`  ${chalk.gray(o.id?.slice(0, 8) || '?')}  ${o.task_description?.slice(0, 40) || 'Order'}  $${parseFloat(o.amount_usd || 0).toFixed(2)}  ${chalk[statusColor](o.status)}`);
       }
     });
 
