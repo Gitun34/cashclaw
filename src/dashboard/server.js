@@ -6,7 +6,7 @@ import { VERSION } from '../utils/version.js';
 import { listMissions, getMissionStats, getMissionTrail } from '../engine/mission-runner.js';
 import { getTotal, getMonthly, getWeekly, getToday, getHistory, getByService, getDailyTotals } from '../engine/earnings-tracker.js';
 import { listInstalledSkills, listAvailableSkills } from '../integrations/openclaw-bridge.js';
-import { listAvailableJobs, getAgentProfile, listOrders, registerAgent, syncStatus, acceptJob, deliverJob, getWallet } from '../integrations/hyrve-bridge.js';
+import { listAvailableJobs, getAgentProfile, listOrders, registerAgent, syncStatus, acceptJob, deliverJob, getWallet, acceptProposal, rejectProposal, sendMessage, getMessages, requestWithdraw, claimAgent, getJobDetail } from '../integrations/hyrve-bridge.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -372,6 +372,60 @@ export function createDashboardServer() {
     } catch (err) {
       res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: err.message } });
     }
+  });
+
+  /**
+   * POST /api/hyrve/proposals/:id/accept
+   * Accept a proposal for an order.
+   */
+  app.post('/api/hyrve/proposals/:id/accept', async (req, res) => {
+    try { res.json(await acceptProposal(req.params.id)); }
+    catch (err) { res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: err.message } }); }
+  });
+
+  /**
+   * POST /api/hyrve/proposals/:id/reject
+   * Reject a proposal for an order.
+   */
+  app.post('/api/hyrve/proposals/:id/reject', async (req, res) => {
+    try { res.json(await rejectProposal(req.params.id)); }
+    catch (err) { res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: err.message } }); }
+  });
+
+  /**
+   * GET /api/hyrve/orders/:id/messages
+   * Get messages for an order.
+   */
+  app.get('/api/hyrve/orders/:id/messages', async (req, res) => {
+    try { res.json(await getMessages(req.params.id, req.query.page || 1)); }
+    catch (err) { res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: err.message } }); }
+  });
+
+  /**
+   * POST /api/hyrve/orders/:id/messages
+   * Send a message on an order thread.
+   */
+  app.post('/api/hyrve/orders/:id/messages', async (req, res) => {
+    try { res.json(await sendMessage(req.params.id, req.body.content)); }
+    catch (err) { res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: err.message } }); }
+  });
+
+  /**
+   * POST /api/hyrve/wallet/withdraw
+   * Request a withdrawal from the HYRVE wallet.
+   */
+  app.post('/api/hyrve/wallet/withdraw', async (req, res) => {
+    try { res.json(await requestWithdraw(req.body.amount_usd, req.body.method)); }
+    catch (err) { res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: err.message } }); }
+  });
+
+  /**
+   * GET /api/hyrve/jobs/:id
+   * Get detailed information about a specific job.
+   */
+  app.get('/api/hyrve/jobs/:id', async (req, res) => {
+    try { res.json(await getJobDetail(req.params.id)); }
+    catch (err) { res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: err.message } }); }
   });
 
   /**

@@ -2,6 +2,30 @@
 
 All notable changes to CashClaw will be documented in this file.
 
+## [1.5.0] - 2026-03-20
+
+### Added
+- Full HYRVE API v1.1.0 compatibility (35+ endpoints)
+- JWT authentication support (login + token refresh)
+- Auto-accept mode: proposals under configured limit auto-accepted
+- Agent Claim: claim self-registered agents to your account
+- Proposal management: accept/reject proposals from dashboard + CLI
+- Order messaging: send/receive messages per order
+- Wallet withdrawals: request payouts via Stripe or USDT
+- Job detail view with full description
+- Dispute opening support
+- CLI: `cashclaw hyrve login` - authenticate with email/password
+- CLI: `cashclaw hyrve claim <api-key>` - claim agent
+- CLI: `cashclaw hyrve proposals` - list pending proposals
+- CLI: `cashclaw hyrve messages <orderId>` - view order messages
+- CLI: `cashclaw hyrve withdraw <amount>` - request withdrawal
+- CLI: `cashclaw hyrve auto-accept on/off` - toggle autonomous mode
+- 11 new bridge functions (20 total)
+
+### Fixed
+- README badge showing wrong version
+- Stats updated to match platform (3,580 users, 252 agents)
+
 ## [1.4.5] - 2026-03-20
 
 ### Added

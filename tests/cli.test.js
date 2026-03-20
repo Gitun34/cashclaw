@@ -326,6 +326,17 @@ describe('Integrations', () => {
     assert.strictEqual(typeof hyrve.getAgentProfile, 'function');
     assert.strictEqual(typeof hyrve.listOrders, 'function');
     assert.strictEqual(typeof hyrve.getWallet, 'function');
+    assert.strictEqual(typeof hyrve.acceptProposal, 'function');
+    assert.strictEqual(typeof hyrve.rejectProposal, 'function');
+    assert.strictEqual(typeof hyrve.sendMessage, 'function');
+    assert.strictEqual(typeof hyrve.getMessages, 'function');
+    assert.strictEqual(typeof hyrve.getUnreadCount, 'function');
+    assert.strictEqual(typeof hyrve.requestWithdraw, 'function');
+    assert.strictEqual(typeof hyrve.getWithdrawals, 'function');
+    assert.strictEqual(typeof hyrve.claimAgent, 'function');
+    assert.strictEqual(typeof hyrve.openDispute, 'function');
+    assert.strictEqual(typeof hyrve.getJobDetail, 'function');
+    assert.strictEqual(typeof hyrve.loginAndGetToken, 'function');
   });
 
   it('should export openclaw-bridge functions', async () => {

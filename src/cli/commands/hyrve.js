@@ -5,7 +5,8 @@ import chalk from 'chalk';
 import ora from 'ora';
 import { loadConfig } from '../utils/config.js';
 import { showMiniBanner } from '../utils/banner.js';
-import { listAvailableJobs, listOrders, acceptJob, deliverJob, getAgentProfile, getWallet } from '../../integrations/hyrve-bridge.js';
+import { listAvailableJobs, listOrders, acceptJob, deliverJob, getAgentProfile, getWallet, loginAndGetToken, acceptProposal, rejectProposal, sendMessage, getMessages, requestWithdraw, claimAgent } from '../../integrations/hyrve-bridge.js';
+import { saveConfig } from '../utils/config.js';
 import MppBridge from '../../integrations/mpp-bridge.js';
 
 export function createHyrveCommand() {
@@ -172,6 +173,125 @@ export function createHyrveCommand() {
       const { exec } = await import('child_process');
       const cmd = process.platform === 'win32' ? `start ${url}` : process.platform === 'darwin' ? `open ${url}` : `xdg-open ${url}`;
       exec(cmd);
+    });
+
+  hyrve
+    .command('login')
+    .description('Login to HYRVE AI and get JWT token')
+    .action(async () => {
+      showMiniBanner();
+      const { default: inquirer } = await import('inquirer');
+      const answers = await inquirer.prompt([
+        { type: 'input', name: 'email', message: 'Email:' },
+        { type: 'password', name: 'password', message: 'Password:' },
+      ]);
+      console.log(chalk.cyan('  Logging in...'));
+      const result = await loginAndGetToken(answers.email, answers.password);
+      if (result.success) {
+        const config = await loadConfig();
+        config.hyrve = config.hyrve || {};
+        config.hyrve.jwt_token = result.token;
+        config.hyrve.refresh_token = result.refresh_token;
+        await saveConfig(config);
+        console.log(chalk.green('  ✔ Logged in! Token saved.'));
+      } else {
+        console.log(chalk.red('  ✖ ' + result.message));
+      }
+    });
+
+  hyrve
+    .command('claim <apiKey>')
+    .description('Claim an agent registered via SKILL.md or self-register')
+    .action(async (apiKey) => {
+      showMiniBanner();
+      console.log(chalk.cyan('  Claiming agent...'));
+      const result = await claimAgent(apiKey);
+      if (result.success) {
+        console.log(chalk.green('  ✔ Agent claimed! ' + (result.message || '')));
+      } else {
+        console.log(chalk.red('  ✖ ' + result.message));
+      }
+    });
+
+  hyrve
+    .command('proposals')
+    .description('List pending proposals')
+    .action(async () => {
+      showMiniBanner();
+      console.log(chalk.cyan('  Fetching proposals...'));
+      const result = await listOrders({ status: 'proposal' });
+      const proposals = result.orders || [];
+      if (proposals.length === 0) {
+        console.log(chalk.gray('  No pending proposals.'));
+        return;
+      }
+      console.log(`\n  ${chalk.bold('Pending Proposals')} (${proposals.length})\n`);
+      for (const p of proposals) {
+        console.log(`  ${chalk.gray(p.id?.slice(0,8))}  ${(p.task_description || '').slice(0,40)}  $${parseFloat(p.amount_usd || 0).toFixed(2)}  ${chalk.yellow('proposal')}`);
+      }
+    });
+
+  hyrve
+    .command('messages <orderId>')
+    .description('View messages for an order')
+    .action(async (orderId) => {
+      showMiniBanner();
+      const result = await getMessages(orderId);
+      if (!result.success) {
+        console.log(chalk.red('  ✖ ' + result.message));
+        return;
+      }
+      const msgs = result.messages || [];
+      if (msgs.length === 0) {
+        console.log(chalk.gray('  No messages yet.'));
+        return;
+      }
+      console.log(`\n  ${chalk.bold('Messages')} (${msgs.length})\n`);
+      for (const m of msgs) {
+        const time = new Date(m.created_at).toLocaleString();
+        console.log(`  ${chalk.gray(time)} ${chalk.cyan(m.sender_name || 'Unknown')}: ${m.content}`);
+      }
+    });
+
+  hyrve
+    .command('withdraw <amount>')
+    .description('Request withdrawal from HYRVE wallet')
+    .option('--method <method>', 'Payment method (stripe/usdt_trc20/usdt_erc20)', 'stripe')
+    .action(async (amount, opts) => {
+      showMiniBanner();
+      const amountNum = parseFloat(amount);
+      if (isNaN(amountNum) || amountNum < 10) {
+        console.log(chalk.red('  ✖ Minimum withdrawal is $10'));
+        return;
+      }
+      console.log(chalk.cyan(`  Requesting $${amountNum.toFixed(2)} withdrawal via ${opts.method}...`));
+      const result = await requestWithdraw(amountNum, opts.method);
+      if (result.success) {
+        console.log(chalk.green('  ✔ Withdrawal requested! Processing time: 1-3 business days.'));
+      } else {
+        console.log(chalk.red('  ✖ ' + result.message));
+      }
+    });
+
+  hyrve
+    .command('auto-accept <state>')
+    .description('Enable or disable auto-accept mode (on/off)')
+    .option('--max <usd>', 'Maximum auto-accept amount in USD', '500')
+    .action(async (state, opts) => {
+      showMiniBanner();
+      const config = await loadConfig();
+      config.hyrve = config.hyrve || {};
+      if (state === 'on') {
+        config.hyrve.auto_accept = true;
+        config.hyrve.auto_accept_max_usd = parseFloat(opts.max) || 500;
+        await saveConfig(config);
+        console.log(chalk.green(`  ✔ Auto-accept enabled (max $${config.hyrve.auto_accept_max_usd})`));
+        console.log(chalk.gray('    Proposals under this amount will be auto-accepted.'));
+      } else {
+        config.hyrve.auto_accept = false;
+        await saveConfig(config);
+        console.log(chalk.yellow('  ✔ Auto-accept disabled. You will review proposals manually.'));
+      }
     });
 
   return hyrve;

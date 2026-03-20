@@ -460,3 +460,291 @@ export async function getWallet() {
     return { success: false, wallet: null, transactions: [], message: `Wallet unavailable: ${err.message}` };
   }
 }
+
+// ─── JWT Auth & v1.1.0 Functions ────────────────────────────────────────
+
+/**
+ * Build request headers with JWT or API key authentication.
+ * Prefers JWT Bearer token if available, falls back to X-API-Key.
+ */
+async function getAuthHeaders(config = null) {
+  if (!config) config = await loadConfig();
+  const headers = {
+    'Content-Type': 'application/json',
+    'User-Agent': `CashClaw/${VERSION}`,
+  };
+  // JWT token varsa Bearer kullan, yoksa API key kullan
+  if (config.hyrve?.jwt_token) {
+    headers['Authorization'] = `Bearer ${config.hyrve.jwt_token}`;
+  } else if (config.hyrve?.api_key) {
+    headers['X-API-Key'] = config.hyrve.api_key;
+  }
+  if (config.hyrve?.agent_id) {
+    headers['X-Agent-Id'] = config.hyrve.agent_id;
+  }
+  return headers;
+}
+
+/**
+ * Login to HYRVE AI and obtain a JWT token.
+ * @param {string} email - User email
+ * @param {string} password - User password
+ * @returns {object} { success, token, refresh_token, user }
+ */
+export async function loginAndGetToken(email, password) {
+  const apiUrl = await getApiUrl();
+  try {
+    const response = await fetch(`${apiUrl}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'User-Agent': `CashClaw/${VERSION}` },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!response.ok) {
+      const errMsg = await parseErrorResponse(response);
+      throw new Error(`Login failed (${response.status}): ${errMsg}`);
+    }
+    const data = await response.json();
+    return {
+      success: true,
+      token: data.access_token || data.token,
+      refresh_token: data.refresh_token,
+      user: data.user,
+    };
+  } catch (err) {
+    return { success: false, message: `Login failed: ${err.message}` };
+  }
+}
+
+/**
+ * Accept a proposal for an order.
+ * @param {string} orderId - The order ID with the proposal
+ * @returns {object} { success, order, message }
+ */
+export async function acceptProposal(orderId) {
+  const config = await loadConfig();
+  const apiUrl = await getApiUrl();
+  try {
+    const response = await fetch(`${apiUrl}/orders/${orderId}/accept-proposal`, {
+      method: 'POST',
+      headers: await getAuthHeaders(config),
+    });
+    if (!response.ok) {
+      const errMsg = await parseErrorResponse(response);
+      throw new Error(`Accept failed (${response.status}): ${errMsg}`);
+    }
+    const data = await response.json();
+    return { success: true, order: data.order || data, message: 'Proposal accepted' };
+  } catch (err) {
+    return { success: false, message: `Could not accept proposal: ${err.message}` };
+  }
+}
+
+/**
+ * Reject a proposal for an order.
+ * @param {string} orderId - The order ID with the proposal
+ * @returns {object} { success, message }
+ */
+export async function rejectProposal(orderId) {
+  const config = await loadConfig();
+  const apiUrl = await getApiUrl();
+  try {
+    const response = await fetch(`${apiUrl}/orders/${orderId}/reject-proposal`, {
+      method: 'POST',
+      headers: await getAuthHeaders(config),
+    });
+    if (!response.ok) {
+      const errMsg = await parseErrorResponse(response);
+      throw new Error(`Reject failed (${response.status}): ${errMsg}`);
+    }
+    return { success: true, message: 'Proposal rejected' };
+  } catch (err) {
+    return { success: false, message: `Could not reject proposal: ${err.message}` };
+  }
+}
+
+/**
+ * Send a message on an order thread.
+ * @param {string} orderId - The order ID
+ * @param {string} content - Message content
+ * @returns {object} { success, message }
+ */
+export async function sendMessage(orderId, content) {
+  const config = await loadConfig();
+  const apiUrl = await getApiUrl();
+  try {
+    const response = await fetch(`${apiUrl}/orders/${orderId}/messages`, {
+      method: 'POST',
+      headers: await getAuthHeaders(config),
+      body: JSON.stringify({ content }),
+    });
+    if (!response.ok) {
+      const errMsg = await parseErrorResponse(response);
+      throw new Error(`Send failed (${response.status}): ${errMsg}`);
+    }
+    const data = await response.json();
+    return { success: true, message: data };
+  } catch (err) {
+    return { success: false, message: `Could not send message: ${err.message}` };
+  }
+}
+
+/**
+ * Get messages for an order.
+ * @param {string} orderId - The order ID
+ * @param {number} page - Page number (default 1)
+ * @returns {object} { success, messages, total }
+ */
+export async function getMessages(orderId, page = 1) {
+  const config = await loadConfig();
+  const apiUrl = await getApiUrl();
+  try {
+    const response = await fetch(`${apiUrl}/orders/${orderId}/messages?page=${page}&limit=50`, {
+      headers: await getAuthHeaders(config),
+    });
+    if (!response.ok) {
+      const errMsg = await parseErrorResponse(response);
+      throw new Error(`Fetch failed (${response.status}): ${errMsg}`);
+    }
+    const data = await response.json();
+    return { success: true, messages: data.messages || data, total: data.total || 0 };
+  } catch (err) {
+    return { success: false, messages: [], message: `Could not fetch messages: ${err.message}` };
+  }
+}
+
+/**
+ * Get unread message count for an order.
+ * @param {string} orderId - The order ID
+ * @returns {object} { success, count }
+ */
+export async function getUnreadCount(orderId) {
+  const config = await loadConfig();
+  const apiUrl = await getApiUrl();
+  try {
+    const response = await fetch(`${apiUrl}/orders/${orderId}/messages/unread`, {
+      headers: await getAuthHeaders(config),
+    });
+    if (!response.ok) return { success: false, count: 0 };
+    const data = await response.json();
+    return { success: true, count: data.unread_count || data.count || 0 };
+  } catch (err) {
+    return { success: false, count: 0 };
+  }
+}
+
+/**
+ * Request a withdrawal from the HYRVE wallet.
+ * @param {number} amountUsd - Amount in USD to withdraw
+ * @param {string} method - Payment method (stripe/usdt_trc20/usdt_erc20)
+ * @returns {object} { success, withdrawal }
+ */
+export async function requestWithdraw(amountUsd, method = 'stripe') {
+  const config = await loadConfig();
+  const apiUrl = await getApiUrl();
+  try {
+    const response = await fetch(`${apiUrl}/wallet/withdraw`, {
+      method: 'POST',
+      headers: await getAuthHeaders(config),
+      body: JSON.stringify({ amount_usd: amountUsd, method }),
+    });
+    if (!response.ok) {
+      const errMsg = await parseErrorResponse(response);
+      throw new Error(`Withdraw failed (${response.status}): ${errMsg}`);
+    }
+    const data = await response.json();
+    return { success: true, withdrawal: data };
+  } catch (err) {
+    return { success: false, message: `Withdrawal failed: ${err.message}` };
+  }
+}
+
+/**
+ * Get withdrawal history from the HYRVE wallet.
+ * @returns {object} { success, withdrawals }
+ */
+export async function getWithdrawals() {
+  const config = await loadConfig();
+  const apiUrl = await getApiUrl();
+  try {
+    const response = await fetch(`${apiUrl}/wallet/withdrawals`, {
+      headers: await getAuthHeaders(config),
+    });
+    if (!response.ok) return { success: false, withdrawals: [] };
+    const data = await response.json();
+    return { success: true, withdrawals: data.withdrawals || data };
+  } catch (err) {
+    return { success: false, withdrawals: [] };
+  }
+}
+
+/**
+ * Claim an agent registered via SKILL.md or self-register.
+ * @param {string} apiKey - The API key to claim
+ * @returns {object} { success, agent, message }
+ */
+export async function claimAgent(apiKey) {
+  const config = await loadConfig();
+  const apiUrl = await getApiUrl();
+  try {
+    const response = await fetch(`${apiUrl}/agents/claim`, {
+      method: 'POST',
+      headers: await getAuthHeaders(config),
+      body: JSON.stringify({ api_key: apiKey }),
+    });
+    if (!response.ok) {
+      const errMsg = await parseErrorResponse(response);
+      throw new Error(`Claim failed (${response.status}): ${errMsg}`);
+    }
+    const data = await response.json();
+    return { success: true, agent: data.agent || data, message: 'Agent claimed successfully' };
+  } catch (err) {
+    return { success: false, message: `Could not claim agent: ${err.message}` };
+  }
+}
+
+/**
+ * Open a dispute for an order.
+ * @param {string} orderId - The order ID
+ * @param {string} reason - Dispute reason
+ * @returns {object} { success, message }
+ */
+export async function openDispute(orderId, reason) {
+  const config = await loadConfig();
+  const apiUrl = await getApiUrl();
+  try {
+    const response = await fetch(`${apiUrl}/orders/${orderId}/dispute`, {
+      method: 'POST',
+      headers: await getAuthHeaders(config),
+      body: JSON.stringify({ reason }),
+    });
+    if (!response.ok) {
+      const errMsg = await parseErrorResponse(response);
+      throw new Error(`Dispute failed (${response.status}): ${errMsg}`);
+    }
+    return { success: true, message: 'Dispute opened' };
+  } catch (err) {
+    return { success: false, message: `Could not open dispute: ${err.message}` };
+  }
+}
+
+/**
+ * Get detailed information about a specific job.
+ * @param {string} jobId - The job ID
+ * @returns {object} { success, job }
+ */
+export async function getJobDetail(jobId) {
+  const apiUrl = await getApiUrl();
+  try {
+    const response = await fetch(`${apiUrl}/jobs/${jobId}`, {
+      headers: { 'User-Agent': `CashClaw/${VERSION}` },
+    });
+    if (!response.ok) {
+      const errMsg = await parseErrorResponse(response);
+      throw new Error(`Fetch failed (${response.status}): ${errMsg}`);
+    }
+    const data = await response.json();
+    return { success: true, job: data.job || data };
+  } catch (err) {
+    return { success: false, message: `Could not fetch job: ${err.message}` };
+  }
+}
