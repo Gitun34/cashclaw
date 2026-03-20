@@ -6,6 +6,7 @@ import { VERSION } from '../utils/version.js';
 import { listMissions, getMissionStats, getMissionTrail } from '../engine/mission-runner.js';
 import { getTotal, getMonthly, getWeekly, getToday, getHistory, getByService, getDailyTotals } from '../engine/earnings-tracker.js';
 import { listInstalledSkills, listAvailableSkills } from '../integrations/openclaw-bridge.js';
+import { listAvailableJobs, getAgentProfile, listOrders, registerAgent, syncStatus } from '../integrations/hyrve-bridge.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -237,6 +238,84 @@ export function createDashboardServer() {
       res.json(trail);
     } catch (err) {
       res.status(404).json({ error: { code: 'NOT_FOUND', message: err.message } });
+    }
+  });
+
+  // ─── HYRVE Marketplace Routes ──────────────────────────────────────
+
+  /**
+   * GET /api/hyrve
+   * Returns HYRVE marketplace data (jobs, orders, profile).
+   */
+  app.get('/api/hyrve', async (req, res) => {
+    try {
+      const config = await loadConfig();
+
+      if (!config.hyrve?.registered) {
+        return res.json({
+          registered: false,
+          agent_id: null,
+          jobs: [],
+          orders: [],
+          profile: null,
+        });
+      }
+
+      // Parallel fetch
+      const [jobsResult, ordersResult, profileResult] = await Promise.allSettled([
+        listAvailableJobs(),
+        listOrders({ status: 'all' }),
+        getAgentProfile(),
+      ]);
+
+      res.json({
+        registered: true,
+        agent_id: config.hyrve.agent_id,
+        api_url: config.hyrve.api_url || 'https://api.hyrveai.com/v1',
+        dashboard_url: config.hyrve.dashboard_url || 'https://app.hyrveai.com',
+        jobs: jobsResult.status === 'fulfilled' ? (jobsResult.value.data || []) : [],
+        orders: ordersResult.status === 'fulfilled' ? (ordersResult.value.data || []) : [],
+        profile: profileResult.status === 'fulfilled' ? profileResult.value.data : null,
+      });
+    } catch (err) {
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: err.message } });
+    }
+  });
+
+  /**
+   * POST /api/hyrve/register
+   * Register this CashClaw agent on HYRVE marketplace.
+   */
+  app.post('/api/hyrve/register', async (req, res) => {
+    try {
+      const config = await loadConfig();
+      const result = await registerAgent(config);
+
+      if (result.success) {
+        config.hyrve = config.hyrve || {};
+        config.hyrve.registered = true;
+        config.hyrve.agent_id = result.data.agent_id;
+        config.hyrve.api_key = result.data.api_key;
+        config.hyrve.enabled = true;
+        await saveConfig(config);
+      }
+
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: err.message } });
+    }
+  });
+
+  /**
+   * POST /api/hyrve/sync
+   * Sync status heartbeat with HYRVE.
+   */
+  app.post('/api/hyrve/sync', async (req, res) => {
+    try {
+      const result = await syncStatus();
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: err.message } });
     }
   });
 

@@ -84,6 +84,22 @@
         </div>
       </section>
 
+      <!-- HYRVE Marketplace -->
+      <section class="panel hyrve-panel">
+        <h2 class="panel-title">
+          HYRVE Marketplace
+          <span class="badge" id="hyrveStatus">-</span>
+        </h2>
+        <div id="hyrveContent">
+          <div class="empty-state">Loading HYRVE data...</div>
+        </div>
+        <div class="hyrve-actions" id="hyrveActions" style="display:none;">
+          <button class="btn btn-primary" id="hyrveRegisterBtn" onclick="registerOnHyrve()">Register on HYRVE</button>
+          <button class="btn btn-secondary" id="hyrveSyncBtn" onclick="syncHyrve()">Sync Status</button>
+          <a class="btn btn-outline" href="https://app.hyrveai.com" target="_blank">Open Dashboard</a>
+        </div>
+      </section>
+
       <!-- Recent Earnings -->
       <section class="panel recent-panel">
         <h2 class="panel-title">Recent Earnings</h2>

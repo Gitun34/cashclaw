@@ -435,6 +435,22 @@ body {
   background: var(--text-muted);
 }
 
+/* ─── HYRVE Marketplace ─────────────────────────────────────────── */
+
+.hyrve-panel { grid-column: 1 / -1; }
+.hyrve-actions { display: flex; gap: 8px; margin-top: 12px; }
+.hyrve-section { margin-bottom: 16px; }
+.hyrve-section h3 { font-size: 13px; color: #8B9CC0; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+.btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; text-decoration: none; }
+.btn-primary { background: #16C784; color: #fff; }
+.btn-primary:hover { background: #12A96D; }
+.btn-secondary { background: #2A3A5C; color: #C5D0E6; }
+.btn-secondary:hover { background: #354B75; }
+.btn-outline { background: transparent; border: 1px solid #2A3A5C; color: #8B9CC0; }
+.btn-outline:hover { border-color: #16C784; color: #16C784; }
+.badge-success { background: #16C784 !important; }
+.badge-warning { background: #F5A623 !important; }
+
 /* ─── Responsive ─────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {

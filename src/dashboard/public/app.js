@@ -23,6 +23,7 @@ async function loadAll() {
       loadEarnings(),
       loadMissions(),
       loadSkills(),
+      loadHyrve(),
     ]);
     document.getElementById('lastUpdated').textContent =
       'Updated: ' + new Date().toLocaleTimeString();
@@ -128,6 +129,121 @@ async function loadSkills() {
 
   document.getElementById('skillsCount').textContent = data.total_installed || 0;
   renderSkills(data.skills || []);
+}
+
+// ─── HYRVE Marketplace ────────────────────────────────────────────────
+
+async function loadHyrve() {
+  const res = await fetch('/api/hyrve');
+  const data = await res.json();
+
+  const statusEl = document.getElementById('hyrveStatus');
+  const contentEl = document.getElementById('hyrveContent');
+  const actionsEl = document.getElementById('hyrveActions');
+
+  actionsEl.style.display = 'flex';
+
+  if (!data.registered) {
+    statusEl.textContent = 'Not Connected';
+    statusEl.className = 'badge badge-warning';
+    document.getElementById('hyrveRegisterBtn').style.display = 'inline-block';
+    document.getElementById('hyrveSyncBtn').style.display = 'none';
+    contentEl.innerHTML = '<div class="empty-state">Not registered on HYRVE marketplace.<br>Click "Register on HYRVE" to connect.</div>';
+    return;
+  }
+
+  statusEl.textContent = 'Connected';
+  statusEl.className = 'badge badge-success';
+  document.getElementById('hyrveRegisterBtn').style.display = 'none';
+  document.getElementById('hyrveSyncBtn').style.display = 'inline-block';
+
+  let html = '';
+
+  // Profile
+  if (data.profile) {
+    html += '<div class="hyrve-section"><h3>Agent Profile</h3>';
+    html += '<div class="info-row"><span class="info-label">Agent ID</span><span class="info-value">' + escapeHtml(data.agent_id) + '</span></div>';
+    html += '<div class="info-row"><span class="info-label">Rating</span><span class="info-value">' + (data.profile.avg_rating || 'N/A') + '</span></div>';
+    html += '<div class="info-row"><span class="info-label">Status</span><span class="info-value">' + (data.profile.status || 'active') + '</span></div>';
+    html += '</div>';
+  }
+
+  // Available Jobs
+  const jobs = data.jobs || [];
+  html += '<div class="hyrve-section"><h3>Available Jobs (' + jobs.length + ')</h3>';
+  if (jobs.length === 0) {
+    html += '<div class="empty-state">No jobs available right now</div>';
+  } else {
+    html += jobs.slice(0, 5).map(j =>
+      '<div class="mission-item">' +
+        '<div class="mission-info">' +
+          '<div class="mission-name">' + escapeHtml(j.title || j.description || 'Job') + '</div>' +
+          '<div class="mission-meta">' + escapeHtml(j.category || '') + '</div>' +
+        '</div>' +
+        '<span class="mission-price">$' + (j.budget || j.price || 0) + '</span>' +
+      '</div>'
+    ).join('');
+  }
+  html += '</div>';
+
+  // Orders
+  const orders = data.orders || [];
+  html += '<div class="hyrve-section"><h3>Orders (' + orders.length + ')</h3>';
+  if (orders.length === 0) {
+    html += '<div class="empty-state">No orders yet</div>';
+  } else {
+    html += orders.slice(0, 5).map(o =>
+      '<div class="mission-item">' +
+        '<div class="mission-info">' +
+          '<div class="mission-name">' + escapeHtml(o.title || 'Order #' + (o.id || '').slice(0, 8)) + '</div>' +
+          '<div class="mission-meta">' + escapeHtml(o.status || '') + '</div>' +
+        '</div>' +
+        '<span class="mission-price">$' + (o.amount || o.price || 0) + '</span>' +
+      '</div>'
+    ).join('');
+  }
+  html += '</div>';
+
+  contentEl.innerHTML = html;
+}
+
+async function registerOnHyrve() {
+  const btn = document.getElementById('hyrveRegisterBtn');
+  btn.textContent = 'Registering...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/hyrve/register', { method: 'POST' });
+    const data = await res.json();
+
+    if (data.success) {
+      btn.textContent = 'Registered!';
+      await loadHyrve();
+    } else {
+      btn.textContent = 'Failed - Retry';
+      btn.disabled = false;
+      alert('Registration failed: ' + (data.message || 'Unknown error'));
+    }
+  } catch (err) {
+    btn.textContent = 'Error - Retry';
+    btn.disabled = false;
+    alert('Error: ' + err.message);
+  }
+}
+
+async function syncHyrve() {
+  const btn = document.getElementById('hyrveSyncBtn');
+  btn.textContent = 'Syncing...';
+
+  try {
+    await fetch('/api/hyrve/sync', { method: 'POST' });
+    btn.textContent = 'Synced!';
+    await loadHyrve();
+    setTimeout(() => { btn.textContent = 'Sync Status'; }, 2000);
+  } catch (err) {
+    btn.textContent = 'Sync Failed';
+    setTimeout(() => { btn.textContent = 'Sync Status'; }, 2000);
+  }
 }
 
 // ─── Renderers ─────────────────────────────────────────────────────────
