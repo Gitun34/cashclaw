@@ -7,7 +7,7 @@
     "cashclaw": "./bin/cashclaw.js"
   },
   "main": "./src/cli/index.js",
-  "scripts": {
+  "scripts": {"start": "node server.js",
     "start": "node bin/cashclaw.js",
     "test": "node --test tests/cli.test.js"
   },
